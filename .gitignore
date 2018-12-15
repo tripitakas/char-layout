@@ -1,0 +1,18 @@
+# OS junk files
+[Tt]humbs.db
+Desktop.ini
+*.DS_Store
+*.bak*
+*.tmp
+*.log
+._*
+~*
+
+# PyCharm
+.idea/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+## Configure for this project
