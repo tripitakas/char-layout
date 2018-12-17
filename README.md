@@ -9,6 +9,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
+如果遇到端口被占用的错误，可结束端口上的进程
+```sh
+sudo lsof -i:8001
+sudo kill -9 PID号
+```
+
 ## 参考资料
 
 - [Bootstrap 3 中文文档](https://v3.bootcss.com)
