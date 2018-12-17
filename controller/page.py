@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from tornado.web import RequestHandler
-from tornado.escape import to_basestring
+from tornado.escape import to_basestring, json_decode
 from os import path, listdir
 from util import load_json
+from controller.layout import Layout
 
 
 class BaseHandler(RequestHandler):
@@ -35,4 +36,15 @@ class PageHandler(BaseHandler):
         page = load_json(path.join('static', 'pos', name + '.json'))
         if not page:
             return self.write(name + ' not exist')
-        self.render('page.html', page=page)
+        layout = Layout.load_page(page, 0)
+        self.render('page.html', page=page, stage=0, chars=layout.generate_chars())
+
+    def post(self, name):
+        if not self.current_user:
+            return self.send_error(304, reason='请先设置昵称')
+
+        page = load_json(path.join('static', 'pos', name + '.json'))
+        chars = json_decode(self.get_body_argument('chars'))
+        layout = Layout.load_page(page, 1)
+        chars = layout.apply_chars(chars)
+        self.render('page.html', page=page, stage=1, chars=chars)
