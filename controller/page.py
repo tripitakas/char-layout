@@ -4,7 +4,7 @@
 from tornado.web import RequestHandler
 from tornado.escape import to_basestring, json_decode
 from os import path, listdir
-from util import load_json
+from util import load_json, save_json
 from controller.layout import Layout
 
 
@@ -48,10 +48,26 @@ class PageHandler(BaseHandler):
         if not self.current_user:
             return self.send_error(304, reason='请先设置昵称')
 
-        # 用户校对完字框类型后，请求字框计算模块生成字框顺序
-        page = load_json(path.join('static', 'pos', name + '.json'))
-        chars = json_decode(self.get_body_argument('chars'))
-        layout = Layout.load_page(page, 1)
-        chars = layout.apply_chars(chars)
+        filename = path.join('static', 'pos', name + '.json')
+        page = load_json(filename)
+        stage = int(self.get_body_argument('stage'))
+        layout = Layout.load_page(page, stage)
 
-        self.render('page.html', page=page, stage=1, chars=chars)
+        if stage == 1:
+            # 用户校对完字框类型后，请求字框计算模块生成字框顺序
+            inline_chars = json_decode(self.get_body_argument('inline_chars', '[]'))
+            chars = page['chars']
+            assert len(inline_chars) == len(chars)
+            for i, c in enumerate(chars):
+                c['inline-char'] = inline_chars[i]
+            chars = layout.apply_inline_chars(chars)
+            self.render('page.html', page=page, stage=stage, chars=chars)
+
+        elif stage == 2:
+            # 用户拖拽改变字框顺序，请求字框计算模块生成字框和列框的编号
+            chars = json_decode(self.get_body_argument('chars', '[]'))
+            assert len(chars) == len(page['chars'])
+            if layout.apply_chars_order(chars):
+                save_json(page, filename)
+                stage = 3
+            self.render('page.html', page=page, stage=stage, chars=chars)
