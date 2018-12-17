@@ -5,6 +5,12 @@
 ## 运行
 
 ```
-pip install tornado
+pip install -r requirements.txt
 python main.py
 ```
+
+## 参考资料
+
+- [Bootstrap 3 中文文档](https://v3.bootcss.com)
+- [Tornado 官方文档中文版](https://tornado-zh.readthedocs.io/zh/latest/)
+- [Raphael.js 图形库文档](http://dmitrybaranovskiy.github.io/raphael/)
