@@ -33,18 +33,25 @@ class MainHandler(BaseHandler):
 
 class PageHandler(BaseHandler):
     def get(self, name):
+        # 用户选择一个页面开始校对，先读取原始列框和字框的切分数据
         page = load_json(path.join('static', 'pos', name + '.json'))
         if not page:
             return self.write(name + ' not exist')
+
+        # 请求字框计算模块生成初始的字框类型（普通字、夹注小字）
         layout = Layout.load_page(page, 0)
-        self.render('page.html', page=page, stage=0, chars=layout.generate_chars())
+        chars = layout.generate_chars()
+
+        self.render('page.html', page=page, stage=0, chars=chars)
 
     def post(self, name):
         if not self.current_user:
             return self.send_error(304, reason='请先设置昵称')
 
+        # 用户校对完字框类型后，请求字框计算模块生成字框顺序
         page = load_json(path.join('static', 'pos', name + '.json'))
         chars = json_decode(self.get_body_argument('chars'))
         layout = Layout.load_page(page, 1)
         chars = layout.apply_chars(chars)
+
         self.render('page.html', page=page, stage=1, chars=chars)
