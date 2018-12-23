@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from .layout_demo import main as core
+
 
 class Layout(object):
 
