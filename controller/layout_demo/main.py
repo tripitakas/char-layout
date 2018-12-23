@@ -14,44 +14,31 @@ def is_contained_in(A,B):
     return False
 
 
+def calc(coordinate_char_list, coordinate_block_list, coordinate_column_list):
+    """ 输入字框、栏框、列框，输出新的字框数组{block_id,column_id,ch_id,subcolumn_id,note_id,column_order} """
 
-
-# main 函数
-#########################################################################
-if __name__ == '__main__':
-    # 文件路径
-    filename = "data/JX_165_7_12"
-    # 加载字框数据
-    with open(filename+".json", 'r', encoding='UTF-8') as load_f:
-        data_dict = json.load(load_f)
-        coordinate_char_list = data_dict['chars']
-    # 加载栏框和列框数据
-    with open(filename + "_column" + ".json", 'r') as load_f:
-        data_dict = json.load(load_f)
-        coordinate_block_list = data_dict['blocks']
-        coordinate_column_list = data_dict['columns']
-#########################################################################
     # 定义新的字框数据结构
     char_list = []
     for i in range(0, len(coordinate_char_list)):
-        char_list.append({'block_id': 0, 'column_id': 0, 'ch_id': 0, 'subcolumn_id': 0, 'note_id': 0, 'column_order':0})
+        char_list.append(
+            {'block_id': 0, 'column_id': 0, 'ch_id': 0, 'subcolumn_id': 0, 'note_id': 0, 'column_order': 0})
 
     # 标记栏框和列框
     for i in range(0, len(coordinate_char_list)):
         for i_b in range(0, len(coordinate_block_list)):
             if is_contained_in(coordinate_char_list[i], coordinate_block_list[i_b]):
-                char_list[i]['block_id'] = i_b+1
+                char_list[i]['block_id'] = i_b + 1
         for i_c in range(0, len(coordinate_column_list)):
             if is_contained_in(coordinate_char_list[i], coordinate_column_list[i_c]):
-                char_list[i]['column_id'] = i_c+1
-##########################################################################
+                char_list[i]['column_id'] = i_c + 1
+                ##########################################################################
     # 逐列处理
     for i_b in range(0, len(coordinate_block_list)):
         for i_c in range(0, len(coordinate_column_list)):
             # 统计列内字框的索引
             char_indices_in_column = []
             for i in range(0, len(coordinate_char_list)):
-                if char_list[i]['column_id'] == i_c+1 and char_list[i]['block_id']==i_b+1:
+                if char_list[i]['column_id'] == i_c + 1 and char_list[i]['block_id'] == i_b + 1:
                     char_indices_in_column.append(i)
             # 按高度重新排序
             idx_sorted = sorted(range(len(char_indices_in_column)),
@@ -68,17 +55,29 @@ if __name__ == '__main__':
                 for i in sorted_char_indices:
                     char_list[i]['ch_id'] = order
                     char_list[i]['column_order'] = order
-                    order = order + 1
+                    order += 1
             else:
                 # 标记夹注小字
                 mark_subcolumns(coordinate_char_list, char_list, sorted_char_indices)
                 calc_order(char_list, sorted_char_indices)
-    # 保存数据
-    py2json = {}
-    py2json['char_list'] = char_list
-    json_str = json.dumps(py2json)
-    #print(char_list)
-    #print(json_str)
+    # 输出数据
+    return char_list
 
 
+# main 函数
+#########################################################################
+if __name__ == '__main__' or 1:
+    # 文件路径
+    filename = __file__[:-7] + "data/JX_165_7_12"
+    # 加载字框数据
+    with open(filename+".json", 'r', encoding='UTF-8') as load_f:
+        data_dict = json.load(load_f)
+        coordinate_char_list = data_dict['chars']
+    # 加载栏框和列框数据
+    with open(filename + "_column" + ".json", 'r') as load_f:
+        data_dict = json.load(load_f)
+        coordinate_block_list = data_dict['blocks']
+        coordinate_column_list = data_dict['columns']
 
+    result = calc(coordinate_char_list, coordinate_block_list, coordinate_column_list)
+    print(json.dumps(result))
