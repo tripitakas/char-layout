@@ -1,7 +1,10 @@
 import json
 from .check_mulsubcol import check_multiple_subcolumns
 from .mark_mulsubcol import mark_subcolumns
+from .mark_mulsubcol import mark_subcolumns_knownsmall
+from .check_mulsubcol import compare_y
 from .use_noteid import calc_order
+
 
 # A 是否包含在B当中
 def is_contained_in(A,B):
@@ -14,52 +17,109 @@ def is_contained_in(A,B):
     return False
 
 
-def calc(coordinate_char_list, coordinate_block_list, coordinate_column_list):
-    """ 输入字框、栏框、列框，输出新的字框数组{block_id,column_id,ch_id,subcolumn_id,note_id,column_order} """
-
-    # 定义新的字框数据结构
-    char_list = []
-    for i in range(0, len(coordinate_char_list)):
-        char_list.append(
-            {'block_id': 0, 'column_id': 0, 'ch_id': 0, 'subcolumn_id': 0, 'note_id': 0, 'column_order': 0})
-
-    # 标记栏框和列框
-    for i in range(0, len(coordinate_char_list)):
+def calc(coordinate_char_list, coordinate_block_list, coordinate_column_list, sort_after_notecheck=True):
+    if sort_after_notecheck:
+        """ 输入字框、栏框、列框，输出新的字框数组 """
+        # 逐列处理
         for i_b in range(0, len(coordinate_block_list)):
-            if is_contained_in(coordinate_char_list[i], coordinate_block_list[i_b]):
-                char_list[i]['block_id'] = i_b + 1
-        for i_c in range(0, len(coordinate_column_list)):
-            if is_contained_in(coordinate_char_list[i], coordinate_column_list[i_c]):
-                char_list[i]['column_id'] = i_c + 1
-                ##########################################################################
-    # 逐列处理
-    for i_b in range(0, len(coordinate_block_list)):
-        for i_c in range(0, len(coordinate_column_list)):
-            # 统计列内字框的索引
-            char_indices_in_column = []
-            for i in range(0, len(coordinate_char_list)):
-                if char_list[i]['column_id'] == i_c + 1 and char_list[i]['block_id'] == i_b + 1:
-                    char_indices_in_column.append(i)
-            # 按高度重新排序
-            idx_sorted = sorted(range(len(char_indices_in_column)),
-                                key=lambda k: coordinate_char_list[char_indices_in_column[k]]['y'])
-            sorted_char_indices = []
-            for i in range(0, len(char_indices_in_column)):
-                sorted_char_indices.append(char_indices_in_column[idx_sorted[i]])
+            for i_c in range(0, len(coordinate_column_list)):
+                # 统计列内字框的索引
+                char_indices_in_column = []
+                flag_changed = False
+                for char in coordinate_char_list:
+                    if char['column_id'] == i_c + 1 and char['block_id'] == i_b + 1:
+                        char_indices_in_column.append(i)
+                        changed = char.get('is_small')
+                        if changed is not None:
+                            flag_changed = True
+                if flag_changed:
+                    # 按高度重新排序
+                    idx_sorted = sorted(range(len(char_indices_in_column)),
+                                        key=lambda k: coordinate_char_list[char_indices_in_column[k]]['y'])
+                    sorted_char_indices = []
+                    is_small = []
+                    for i in range(0, len(char_indices_in_column)):
+                        sorted_char_indices.append(char_indices_in_column[idx_sorted[i]])
+                    # 判断列内是否存在夹注小字
+                    flag_multiple_subcolumns = False
+                    for i in sorted_char_indices:
+                        changed = coordinate_char_list[i].get('is_small')
+                        if changed is not None:
+                            # 校正后是否存在夹注小字
+                            if coordinate_char_list[i]['is_small']:
+                                flag_multiple_subcolumns = True
+                                is_small.append(True)
+                            else:
+                                # 将错标小字的标记改正
+                                coordinate_char_list[i]['subcolumn_id'] = 0
+                                coordinate_char_list[i]['note_id'] = 0
+                                is_small.append(False)
+                        else:
+                            # 原本是否存在夹注小字
+                            if coordinate_char_list[i]['subcolumn_id'] != 0:
+                                flag_multiple_subcolumns = True
+                                is_small.append(True)
+                            else:
+                                is_small.append(False)
+                    # 按高度排序，标记大字
+                    if not flag_multiple_subcolumns:
+                        order = 1
+                        for i in sorted_char_indices:
+                            coordinate_char_list[i]['ch_id'] = order
+                            coordinate_char_list[i]['column_order'] = order
+                            order += 1
+                    else:
+                        # 标记夹注小字
+                        mark_subcolumns_knownsmall(coordinate_char_list, sorted_char_indices, is_small)
+                        calc_order(coordinate_char_list, sorted_char_indices)
+                else:
+                    continue
 
-            # 判断是否存在夹注小字
-            flag_multiple_subcolumns = check_multiple_subcolumns(coordinate_char_list, sorted_char_indices)
-            # 按高度排序，标记大字
-            if flag_multiple_subcolumns == 0:
-                order = 1
-                for i in sorted_char_indices:
-                    char_list[i]['ch_id'] = order
-                    char_list[i]['column_order'] = order
-                    order += 1
-            else:
-                # 标记夹注小字
-                mark_subcolumns(coordinate_char_list, char_list, sorted_char_indices)
-                calc_order(char_list, sorted_char_indices)
+    else:
+        """ 输入字框、栏框、列框，输出新的字框数组{block_id,column_id,ch_id,subcolumn_id,note_id,column_order} """
+        # 定义新的字框数据结构
+        char_list = []
+        for i in range(0, len(coordinate_char_list)):
+            char_list.append(
+                {'block_id': 0, 'column_id': 0, 'ch_id': 0, 'subcolumn_id': 0, 'note_id': 0, 'column_order': 0})
+
+        # 标记栏框和列框
+        for i in range(0, len(coordinate_char_list)):
+            for i_b in range(0, len(coordinate_block_list)):
+                if is_contained_in(coordinate_char_list[i], coordinate_block_list[i_b]):
+                    char_list[i]['block_id'] = i_b + 1
+            for i_c in range(0, len(coordinate_column_list)):
+                if is_contained_in(coordinate_char_list[i], coordinate_column_list[i_c]):
+                    char_list[i]['column_id'] = i_c + 1
+                    ##########################################################################
+        # 逐列处理
+        for i_b in range(0, len(coordinate_block_list)):
+            for i_c in range(0, len(coordinate_column_list)):
+                # 统计列内字框的索引
+                char_indices_in_column = []
+                for i in range(0, len(coordinate_char_list)):
+                    if char_list[i]['column_id'] == i_c + 1 and char_list[i]['block_id'] == i_b + 1:
+                        char_indices_in_column.append(i)
+                # 按高度重新排序
+                idx_sorted = sorted(range(len(char_indices_in_column)),
+                                    key=lambda k: coordinate_char_list[char_indices_in_column[k]]['y'])
+                sorted_char_indices = []
+                for i in range(0, len(char_indices_in_column)):
+                    sorted_char_indices.append(char_indices_in_column[idx_sorted[i]])
+
+                # 判断是否存在夹注小字
+                flag_multiple_subcolumns = check_multiple_subcolumns(coordinate_char_list, sorted_char_indices)
+                # 按高度排序，标记大字
+                if flag_multiple_subcolumns == 0:
+                    order = 1
+                    for i in sorted_char_indices:
+                        char_list[i]['ch_id'] = order
+                        char_list[i]['column_order'] = order
+                        order += 1
+                else:
+                    # 标记夹注小字
+                    mark_subcolumns(coordinate_char_list, char_list, sorted_char_indices)
+                    calc_order(char_list, sorted_char_indices)
     # 输出数据
     return char_list
 
