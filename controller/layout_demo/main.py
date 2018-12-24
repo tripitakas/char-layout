@@ -66,7 +66,7 @@ def calc(coordinate_char_list, coordinate_block_list, coordinate_column_list):
 
 # main 函数
 #########################################################################
-if __name__ == '__main__' or 1:
+if __name__ == '__main__':
     # 文件路径
     filename = __file__[:-7] + "data/JX_165_7_12"
     # 加载字框数据

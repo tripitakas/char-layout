@@ -4,9 +4,11 @@
 
 ## 运行
 
+运行 `python3 merge_pos.py local_pos_path` 合并栏框、列框、字框的校对结果到 `static/pos/`。
+
 ```
-pip install -r requirements.txt
-python main.py
+pip3 install -r requirements.txt
+python3 main.py
 ```
 
 如果遇到端口被占用的错误，可结束端口上的进程

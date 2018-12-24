@@ -16,3 +16,6 @@ __pycache__/
 *.py[cod]
 
 ## Configure for this project
+static/index.json
+static/img/
+static/pos/
